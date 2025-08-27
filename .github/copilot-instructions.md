@@ -7,7 +7,7 @@
 	- Engine and content separated (engine in `game_engine/`, content in `games/`)
 	- Support for verbs: movement, get, drop, inventory, use, place
 	- Puzzle system: puzzles defined in game file, solved by 'use' or 'place' actions
-	- Version control: All changes must be committed to git with clear messages. Bump the version in `game_engine/version.py` for any feature, bugfix, or breaking change. Use semantic versioning (MAJOR.MINOR.PATCH).
+	- Version control: All changes must be committed to git with clear messages. Bump the version in `game_engine/version.py` and `setup.py` for any feature, bugfix, or breaking change. Use semantic versioning (MAJOR.MINOR.PATCH). By default, increment the PATCH version for every commit unless the user specifies a MAJOR or MINOR version update.
 
 - [x] Scaffold the Project
 	- Created `game_engine/` for engine code and `games/` for content
