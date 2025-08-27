@@ -38,6 +38,8 @@ class GameEngine:
         self.current_location = None
         self.inventory = []
         self.puzzles = []
+        self.ended = False
+        self.end_summary = None
 
     def load_game(self, file_path):
         with open(file_path, 'r') as f:
@@ -62,7 +64,7 @@ class GameEngine:
         if not self.current_location:
             print("No starting location set.")
             return
-        while True:
+        while not self.ended:
             print()
             self.print_location_description()
             if self.current_location.items:
@@ -121,6 +123,9 @@ class GameEngine:
                 self.handle_place(item, target)
             else:
                 print("You can't do that.")
+        if self.ended and self.end_summary:
+            print("\n=== GAME OVER ===")
+            print(self.end_summary)
 
     def print_location_description(self):
         desc = self.current_location.description
@@ -137,11 +142,14 @@ class GameEngine:
             print(f"You don't have a {item} to use.")
             return
         for puzzle in self.puzzles:
-            if puzzle['type'] == 'use' and puzzle['item'] == item and puzzle['location'] == self.current_location.name:
+            if puzzle['type'] == 'use' and puzzle['item'] == item and (('location' not in puzzle) or puzzle['location'] == self.current_location.name):
                 print(puzzle['success'])
                 if puzzle.get('remove_item', False):
                     self.inventory.remove(item)
                 self.handle_puzzle_actions(puzzle)
+                if puzzle.get('end_game'):
+                    self.ended = True
+                    self.end_summary = puzzle.get('end_summary', 'The game has ended.')
                 return
         print(f"You try to use the {item}, but nothing happens.")
 
@@ -155,6 +163,9 @@ class GameEngine:
                 if puzzle.get('remove_item', False):
                     self.inventory.remove(item)
                 self.handle_puzzle_actions(puzzle)
+                if puzzle.get('end_game'):
+                    self.ended = True
+                    self.end_summary = puzzle.get('end_summary', 'The game has ended.')
                 return
         print(f"You try to place the {item} on the {target}, but nothing happens.")
 

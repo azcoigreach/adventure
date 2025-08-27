@@ -8,7 +8,8 @@
         },
         "Library": {
             "description": "You've entered a musty library lined with shelves of ancient, decaying books. In the center of the room sits a large, locked chest. A door leads south.",
-            "exits": { "south": "Foyer" }
+            "exits": { "south": "Foyer" },
+            "items": ["poison"]
         },
         "Secret Room": {
             "description": "A hidden room filled with cobwebs and a pile of treasure! The only exit is west back to the Library.",
@@ -29,6 +30,13 @@
                 {"type": "add_exit", "location": "Library", "direction": "east", "to": "Secret Room"},
                 {"type": "print", "message": "A secret door slides open to the east!"}
             ]
+        },
+        {
+            "type": "use",
+            "item": "poison",
+            "success": "You drink the poison. Uh oh...",
+            "end_game": true,
+            "end_summary": "You have died. Thanks for playing!"
         }
     ]
 }
