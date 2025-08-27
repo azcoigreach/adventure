@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="adventure-engine",
-    version="0.1.0",
+    version="0.1.2",
     packages=find_packages(),
     py_modules=["adventure"],
     install_requires=["click"],
