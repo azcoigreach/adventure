@@ -1,0 +1,34 @@
+{
+    "start_location": "Foyer",
+    "locations": {
+        "Foyer": {
+            "description": "You are in the dusty foyer of a spooky old mansion. A grand staircase leads up, but it's blocked by rubble. A single door stands to the north.",
+            "exits": { "north": "Library" },
+            "items": ["key"]
+        },
+        "Library": {
+            "description": "You've entered a musty library lined with shelves of ancient, decaying books. In the center of the room sits a large, locked chest. A door leads south.",
+            "exits": { "south": "Foyer" }
+        },
+        "Secret Room": {
+            "description": "A hidden room filled with cobwebs and a pile of treasure! The only exit is west back to the Library.",
+            "exits": { "west": "Library" },
+            "items": []
+        }
+    },
+    "puzzles": [
+        {
+            "type": "place",
+            "item": "key",
+            "target": "chest",
+            "location": "Library",
+            "success": "You place the key in the lock and turn it. The chest clicks open!",
+            "remove_item": true,
+            "actions": [
+                {"type": "add_item", "location": "Library", "item": "treasure"},
+                {"type": "add_exit", "location": "Library", "direction": "east", "to": "Secret Room"},
+                {"type": "print", "message": "A secret door slides open to the east!"}
+            ]
+        }
+    ]
+}
