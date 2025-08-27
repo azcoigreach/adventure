@@ -19,18 +19,20 @@ ACTION_ALIASES = {
 
 HELP_TEXT = '''
 Available commands:
-  n,s,e,w,u,d      Move north, south, east, west, up, down
-  look, l          Look around
-  get/take/grab    Pick up an item (e.g. get key)
-  drop             Drop an item (e.g. drop key)
-  use              Use an item (e.g. use key)
-  place/put        Place an item (e.g. place key chest)
-  inventory, i     Show your inventory
-  help, h          Show this help message
-  quit, exit       Quit the game
+    n,s,e,w,u,d      Move north, south, east, west, up, down
+    look, l          Look around
+    get/take/grab    Pick up an item (e.g. get key)
+    drop             Drop an item (e.g. drop key)
+    use              Use an item (e.g. use key)
+    place/put        Place an item (e.g. place key chest)
+    inventory, i     Show your inventory
+    score            Show your current score
+    help, h          Show this help message
+    quit, exit       Quit the game
 '''
 
 FILLER_WORDS = {"the", "a", "an", "in", "on", "at", "to", "with", "and", "of", "from", "into", "onto", "upon"}
+
 
 class GameEngine:
     def __init__(self):
@@ -40,6 +42,8 @@ class GameEngine:
         self.puzzles = []
         self.ended = False
         self.end_summary = None
+        self.score = 0
+        self.moves = 0
 
     def load_game(self, file_path):
         with open(file_path, 'r') as f:
@@ -82,6 +86,7 @@ class GameEngine:
                 dir_full = DIRECTION_ALIASES[action]
                 if dir_full in self.current_location.exits:
                     self.set_current_location(self.current_location.exits[dir_full])
+                    self.moves += 1
                     continue
             # Action aliases
             action = ACTION_ALIASES.get(action, action)
@@ -89,6 +94,12 @@ class GameEngine:
                 continue  # Just reprint the room
             elif action == "help":
                 print(HELP_TEXT)
+                continue
+            elif action == "score":
+                print(f"Your score is {self.score}.")
+                continue
+            elif action == "moves":
+                print(f"You have made {self.moves} moves.")
                 continue
             elif action == "quit":
                 print("Thanks for playing!")
@@ -99,6 +110,7 @@ class GameEngine:
                     self.current_location.remove_item(item)
                     self.inventory.append(item)
                     print(f"You picked up the {item}.")
+                    self.moves += 1
                 else:
                     print("You don't see that here.")
             elif action == "drop" and args:
@@ -107,6 +119,7 @@ class GameEngine:
                     self.inventory.remove(item)
                     self.current_location.add_item(item)
                     print(f"You dropped the {item}.")
+                    self.moves += 1
                 else:
                     print("You don't have that.")
             elif action == "inventory":
@@ -117,15 +130,20 @@ class GameEngine:
             elif action == "use" and args:
                 item = args[0]
                 self.handle_use(item)
+                self.moves += 1
             elif action == "place" and len(args) >= 2:
                 item = args[0]
                 target = " ".join(args[1:])
                 self.handle_place(item, target)
+                self.moves += 1
             else:
                 print("You can't do that.")
-        if self.ended and self.end_summary:
+        if self.ended:
             print("\n=== GAME OVER ===")
-            print(self.end_summary)
+            if self.end_summary:
+                print(self.end_summary)
+            print(f"Your final score is {self.score}.")
+            print(f"You made {self.moves} moves.")
 
     def print_location_description(self):
         desc = self.current_location.description
@@ -147,6 +165,10 @@ class GameEngine:
                 if puzzle.get('remove_item', False):
                     self.inventory.remove(item)
                 self.handle_puzzle_actions(puzzle)
+                # Award points if puzzle has 'score' field
+                if 'score' in puzzle:
+                    self.score += puzzle['score']
+                    print(f"You gained {puzzle['score']} points! Your score is now {self.score}.")
                 if puzzle.get('end_game'):
                     self.ended = True
                     self.end_summary = puzzle.get('end_summary', 'The game has ended.')
@@ -163,6 +185,10 @@ class GameEngine:
                 if puzzle.get('remove_item', False):
                     self.inventory.remove(item)
                 self.handle_puzzle_actions(puzzle)
+                # Award points if puzzle has 'score' field
+                if 'score' in puzzle:
+                    self.score += puzzle['score']
+                    print(f"You gained {puzzle['score']} points! Your score is now {self.score}.")
                 if puzzle.get('end_game'):
                     self.ended = True
                     self.end_summary = puzzle.get('end_summary', 'The game has ended.')

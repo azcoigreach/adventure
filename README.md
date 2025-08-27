@@ -21,6 +21,8 @@ A Zork-like text adventure engine in Python, designed for easy creation of new a
 - Dynamic room descriptions: new exits and items are described after puzzles
 - Command aliases and natural language parsing (e.g., `place the key in the chest`)
 - In-game help (`help`, `h`)
+- Scoring system: earn points for solving puzzles (see `score` field in puzzles)
+- Move tracking: see how many moves you've made (`moves` command, shown at game end)
 - Engine and content are fully separated
 - Semantic versioning and proper git version control
 
@@ -69,6 +71,7 @@ Game files are written in JSON. Example (see `games/haunted_mansion.json`):
             "location": "Library",
             "success": "You place the key in the lock and turn it. The chest clicks open!",
             "remove_item": true,
+            "score": 10,
             "actions": [
                 {"type": "add_item", "location": "Library", "item": "treasure"},
                 {"type": "add_exit", "location": "Library", "direction": "east", "to": "Secret Room"},
@@ -79,8 +82,6 @@ Game files are written in JSON. Example (see `games/haunted_mansion.json`):
 }
 ```
 
-## Supported Verbs & Aliases
-
 - Movement: `north`, `n`, `south`, `s`, `east`, `e`, `west`, `w`, `up`, `u`, `down`, `d`
 - `look`, `l` — Look around
 - `get`, `take`, `grab <item>` — Pick up an item
@@ -88,6 +89,8 @@ Game files are written in JSON. Example (see `games/haunted_mansion.json`):
 - `inventory`, `i` — Show your inventory
 - `use <item>` — Use an item (triggers puzzles if defined)
 - `place`, `put <item> <target>` — Place an item (triggers puzzles if defined)
+- `score` — Show your current score
+- `moves` — Show how many moves you've made
 - `help`, `h` — Show help
 - `quit`, `exit` — Exit the game
 

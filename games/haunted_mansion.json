@@ -25,6 +25,7 @@
             "location": "Library",
             "success": "You place the key in the lock and turn it. The chest clicks open!",
             "remove_item": true,
+            "score": 10,
             "actions": [
                 {"type": "add_item", "location": "Library", "item": "treasure"},
                 {"type": "add_exit", "location": "Library", "direction": "east", "to": "Secret Room"},
