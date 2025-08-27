@@ -14,7 +14,23 @@ ACTION_ALIASES = {
     'use': 'use',
     'place': 'place', 'put': 'place',
     'quit': 'quit', 'exit': 'quit',
+    'help': 'help', 'h': 'help',
 }
+
+HELP_TEXT = '''
+Available commands:
+  n,s,e,w,u,d      Move north, south, east, west, up, down
+  look, l          Look around
+  get/take/grab    Pick up an item (e.g. get key)
+  drop             Drop an item (e.g. drop key)
+  use              Use an item (e.g. use key)
+  place/put        Place an item (e.g. place key chest)
+  inventory, i     Show your inventory
+  help, h          Show this help message
+  quit, exit       Quit the game
+'''
+
+FILLER_WORDS = {"the", "a", "an", "in", "on", "at", "to", "with", "and", "of", "from", "into", "onto", "upon"}
 
 class GameEngine:
     def __init__(self):
@@ -48,7 +64,7 @@ class GameEngine:
             return
         while True:
             print()
-            print(self.current_location.description)
+            self.print_location_description()
             if self.current_location.items:
                 print("You see:", ", ".join(self.current_location.items))
             if not self.current_location.exits:
@@ -58,7 +74,7 @@ class GameEngine:
             if not command:
                 continue
             action = command[0]
-            args = command[1:]
+            args = [w for w in command[1:] if w not in FILLER_WORDS]
             # Direction aliases
             if action in DIRECTION_ALIASES:
                 dir_full = DIRECTION_ALIASES[action]
@@ -69,6 +85,9 @@ class GameEngine:
             action = ACTION_ALIASES.get(action, action)
             if action == "look":
                 continue  # Just reprint the room
+            elif action == "help":
+                print(HELP_TEXT)
+                continue
             elif action == "quit":
                 print("Thanks for playing!")
                 break
@@ -98,10 +117,20 @@ class GameEngine:
                 self.handle_use(item)
             elif action == "place" and len(args) >= 2:
                 item = args[0]
-                target = " ".join(args[2:]) if args[1] == 'on' and len(args) > 2 else args[1]
+                target = " ".join(args[1:])
                 self.handle_place(item, target)
             else:
                 print("You can't do that.")
+
+    def print_location_description(self):
+        desc = self.current_location.description
+        # Add info about new exits (e.g., secret doors)
+        if len(self.current_location.exits) > 1:
+            new_exits = [d for d in self.current_location.exits if d not in desc.lower()]
+            if new_exits:
+                for d in new_exits:
+                    desc += f" There is a door to the {d}."
+        print(desc)
 
     def handle_use(self, item):
         if item not in self.inventory:

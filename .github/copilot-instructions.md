@@ -7,6 +7,7 @@
 	- Engine and content separated (engine in `game_engine/`, content in `games/`)
 	- Support for verbs: movement, get, drop, inventory, use, place
 	- Puzzle system: puzzles defined in game file, solved by 'use' or 'place' actions
+	- Version control: All changes must be committed to git with clear messages. Bump the version in `game_engine/version.py` for any feature, bugfix, or breaking change. Use semantic versioning (MAJOR.MINOR.PATCH).
 
 - [x] Scaffold the Project
 	- Created `game_engine/` for engine code and `games/` for content
@@ -14,7 +15,7 @@
 - [x] Customize the Project
 	- Enhanced engine to support 'use' and 'place' verbs
 	- Added puzzle system (see sample game file)
-
+	- Added support for command aliases and post-puzzle actions
 
 - [ ] Install Required Extensions
 	<!-- ONLY install extensions provided mentioned in the get_project_setup_info. Skip this step otherwise and mark as completed. -->
