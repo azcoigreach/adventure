@@ -1,3 +1,5 @@
+.vscode/
+savegames/*.json
 **/__pycache__/
 **/*.py[cod]
 **/*.so
