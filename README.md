@@ -23,6 +23,7 @@ A Zork-like text adventure engine in Python, designed for easy creation of new a
 - In-game help (`help`, `h`)
 - Scoring system: earn points for solving puzzles (see `score` field in puzzles)
 - Move tracking: see how many moves you've made (`moves` command, shown at game end)
+- Save/Load: save your progress to a file and load it later (`save`, `load`)
 - Engine and content are fully separated
 - Semantic versioning and proper git version control
 
@@ -91,6 +92,8 @@ Game files are written in JSON. Example (see `games/haunted_mansion.json`):
 - `place`, `put <item> <target>` — Place an item (triggers puzzles if defined)
 - `score` — Show your current score
 - `moves` — Show how many moves you've made
+- `save` — Save your game progress
+- `load` — Load a saved game
 - `help`, `h` — Show help
 - `quit`, `exit` — Exit the game
 

@@ -1,4 +1,22 @@
 import json
+import os
+
+class Location:
+    def __init__(self, name, description):
+        self.name = name
+        self.description = description
+        self.exits = {}
+        self.items = []
+
+    def add_exit(self, direction, location_name):
+        self.exits[direction] = location_name
+
+    def add_item(self, item):
+        self.items.append(item)
+
+    def remove_item(self, item):
+        self.items.remove(item)
+
 
 DIRECTION_ALIASES = {
     'n': 'north', 's': 'south', 'e': 'east', 'w': 'west',
@@ -15,6 +33,10 @@ ACTION_ALIASES = {
     'place': 'place', 'put': 'place',
     'quit': 'quit', 'exit': 'quit',
     'help': 'help', 'h': 'help',
+    'score': 'score',
+    'moves': 'moves',
+    'save': 'save',
+    'load': 'load'
 }
 
 HELP_TEXT = '''
@@ -27,6 +49,9 @@ Available commands:
     place/put        Place an item (e.g. place key chest)
     inventory, i     Show your inventory
     score            Show your current score
+    moves            Show how many moves you've made
+    save             Save your game
+    load             Load your game
     help, h          Show this help message
     quit, exit       Quit the game
 '''
@@ -44,10 +69,14 @@ class GameEngine:
         self.end_summary = None
         self.score = 0
         self.moves = 0
+        self._gamefile = None
 
     def load_game(self, file_path):
+        self._gamefile = file_path
         with open(file_path, 'r') as f:
             game_data = json.load(f)
+        
+        self.locations = {} # Clear previous locations
         for loc_name, loc_data in game_data['locations'].items():
             location = Location(loc_name, loc_data['description'])
             for item in loc_data.get('items', []):
@@ -55,8 +84,16 @@ class GameEngine:
             for direction, dest_name in loc_data.get('exits', {}).items():
                 location.add_exit(direction, dest_name)
             self.add_location(location)
+        
         self.set_current_location(game_data['start_location'])
         self.puzzles = game_data.get('puzzles', [])
+        # Reset game state variables that shouldn't persist across game loads
+        self.inventory = []
+        self.score = 0
+        self.moves = 0
+        self.ended = False
+        self.end_summary = None
+
 
     def add_location(self, location):
         self.locations[location.name] = location
@@ -73,37 +110,40 @@ class GameEngine:
             self.print_location_description()
             if self.current_location.items:
                 print("You see:", ", ".join(self.current_location.items))
-            if not self.current_location.exits:
-                print("You are trapped!")
-                break
+            
             command = input("> ").strip().lower().split()
             if not command:
                 continue
-            action = command[0]
+            
+            action_word = command[0]
             args = [w for w in command[1:] if w not in FILLER_WORDS]
-            # Direction aliases
-            if action in DIRECTION_ALIASES:
-                dir_full = DIRECTION_ALIASES[action]
+
+            if action_word in DIRECTION_ALIASES:
+                dir_full = DIRECTION_ALIASES[action_word]
                 if dir_full in self.current_location.exits:
                     self.set_current_location(self.current_location.exits[dir_full])
                     self.moves += 1
-                    continue
-            # Action aliases
-            action = ACTION_ALIASES.get(action, action)
+                else:
+                    print("You can't go that way.")
+                continue
+
+            action = ACTION_ALIASES.get(action_word)
+
             if action == "look":
-                continue  # Just reprint the room
+                continue
             elif action == "help":
                 print(HELP_TEXT)
-                continue
             elif action == "score":
                 print(f"Your score is {self.score}.")
-                continue
             elif action == "moves":
                 print(f"You have made {self.moves} moves.")
-                continue
+            elif action == "save":
+                self.save_game()
+            elif action == "load":
+                self.load_saved_game()
             elif action == "quit":
                 print("Thanks for playing!")
-                break
+                self.ended = True
             elif action == "get" and args:
                 item = args[0]
                 if item in self.current_location.items:
@@ -137,22 +177,20 @@ class GameEngine:
                 self.handle_place(item, target)
                 self.moves += 1
             else:
-                print("You can't do that.")
-        if self.ended:
-            print("\n=== GAME OVER ===")
-            if self.end_summary:
-                print(self.end_summary)
-            print(f"Your final score is {self.score}.")
-            print(f"You made {self.moves} moves.")
+                print("I don't understand that command. Type 'help' for a list of commands.")
+
+        if self.ended and self.end_summary:
+             print("\n=== GAME OVER ===")
+             print(self.end_summary)
+             print(f"Your final score is {self.score}.")
+             print(f"You made {self.moves} moves.")
 
     def print_location_description(self):
+        if not self.current_location:
+            return
         desc = self.current_location.description
-        # Add info about new exits (e.g., secret doors)
-        if len(self.current_location.exits) > 1:
-            new_exits = [d for d in self.current_location.exits if d not in desc.lower()]
-            if new_exits:
-                for d in new_exits:
-                    desc += f" There is a door to the {d}."
+        exits = list(self.current_location.exits.keys())
+        desc += "\nExits: " + ", ".join(exits)
         print(desc)
 
     def handle_use(self, item):
@@ -161,14 +199,17 @@ class GameEngine:
             return
         for puzzle in self.puzzles:
             if puzzle['type'] == 'use' and puzzle['item'] == item and (('location' not in puzzle) or puzzle['location'] == self.current_location.name):
+                if puzzle.get('solved', False):
+                    print(puzzle.get('already_solved_message', "You've already done that."))
+                    return
                 print(puzzle['success'])
                 if puzzle.get('remove_item', False):
                     self.inventory.remove(item)
                 self.handle_puzzle_actions(puzzle)
-                # Award points if puzzle has 'score' field
                 if 'score' in puzzle:
                     self.score += puzzle['score']
                     print(f"You gained {puzzle['score']} points! Your score is now {self.score}.")
+                puzzle['solved'] = True # Mark as solved
                 if puzzle.get('end_game'):
                     self.ended = True
                     self.end_summary = puzzle.get('end_summary', 'The game has ended.')
@@ -181,14 +222,17 @@ class GameEngine:
             return
         for puzzle in self.puzzles:
             if puzzle['type'] == 'place' and puzzle['item'] == item and puzzle['target'] == target and puzzle['location'] == self.current_location.name:
+                if puzzle.get('solved', False):
+                    print(puzzle.get('already_solved_message', "You've already done that."))
+                    return
                 print(puzzle['success'])
                 if puzzle.get('remove_item', False):
                     self.inventory.remove(item)
                 self.handle_puzzle_actions(puzzle)
-                # Award points if puzzle has 'score' field
                 if 'score' in puzzle:
                     self.score += puzzle['score']
                     print(f"You gained {puzzle['score']} points! Your score is now {self.score}.")
+                puzzle['solved'] = True # Mark as solved
                 if puzzle.get('end_game'):
                     self.ended = True
                     self.end_summary = puzzle.get('end_summary', 'The game has ended.')
@@ -217,18 +261,83 @@ class GameEngine:
             elif act['type'] == 'print':
                 print(act['message'])
 
-class Location:
-    def __init__(self, name, description):
-        self.name = name
-        self.description = description
-        self.exits = {}
-        self.items = []
+    def save_game(self):
+        save_dir = "savegames"
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        
+        if not self._gamefile:
+            print("Cannot determine original game file name for save.")
+            return
+        
+        base_name = os.path.basename(self._gamefile)
+        save_filename = os.path.splitext(base_name)[0] + "_savegame.json"
+        save_path = os.path.join(save_dir, save_filename)
 
-    def add_exit(self, direction, location_name):
-        self.exits[direction] = location_name
+        # Collect puzzle solved states
+        puzzle_states = [p.get('solved', False) for p in self.puzzles]
 
-    def add_item(self, item):
-        self.items.append(item)
+        state = {
+            "original_gamefile": self._gamefile,
+            "current_location": self.current_location.name if self.current_location else None,
+            "inventory": self.inventory,
+            "score": self.score,
+            "moves": self.moves,
+            "locations": {name: {"items": loc.items.copy(), "exits": loc.exits.copy()} for name, loc in self.locations.items()},
+            "puzzle_states": puzzle_states
+        }
+        try:
+            with open(save_path, 'w') as f:
+                json.dump(state, f, indent=4)
+            print(f"Game saved to {save_path}.")
+        except Exception as e:
+            print(f"Failed to save game: {e}")
 
-    def remove_item(self, item):
-        self.items.remove(item)
+    def load_saved_game(self):
+        save_dir = "savegames"
+        if not self._gamefile:
+            print("Cannot determine original game file name for load.")
+            return
+
+        base_name = os.path.basename(self._gamefile)
+        save_filename = os.path.splitext(base_name)[0] + "_savegame.json"
+        save_path = os.path.join(save_dir, save_filename)
+
+        if not os.path.exists(save_path):
+            print(f"No save file found at {save_path}.")
+            return
+
+        try:
+            with open(save_path, 'r') as f:
+                state = json.load(f)
+            
+            # Reload the original game to reset the base state
+            self.load_game(state["original_gamefile"])
+
+            # Restore the saved state
+            self.set_current_location(state["current_location"])
+            self.inventory = state["inventory"]
+            self.score = state["score"]
+            self.moves = state["moves"]
+            
+            # Restore dynamic location state (items/exits)
+            if "locations" in state:
+                for name, loc_state in state["locations"].items():
+                    if name in self.locations:
+                        self.locations[name].items = loc_state.get("items", [])
+                        self.locations[name].exits = loc_state.get("exits", {})
+            
+            # Restore puzzle solved states
+            if "puzzle_states" in state:
+                for i, solved in enumerate(state["puzzle_states"]):
+                    if i < len(self.puzzles):
+                        self.puzzles[i]['solved'] = solved
+
+            print(f"Game loaded from {save_path}.")
+            # Reprint location after loading
+            self.print_location_description()
+            if self.current_location and self.current_location.items:
+                print("You see:", ", ".join(self.current_location.items))
+
+        except Exception as e:
+            print(f"Failed to load game: {e}")
